@@ -133,6 +133,7 @@
 import requests
 import pandas as pd
 import streamlit as st
+import pytz
 from datetime import datetime, timedelta
 import time
 
@@ -191,15 +192,17 @@ branches_config = {
 }
 
 # ========== FETCH FUNCTION ==========
+
+ist = pytz.timezone("Asia/Kolkata")
 @st.cache_data(ttl=600)  # cache for 10 minutes
 def fetch_slots(start_date, days=1):
     all_slots = []
-
     for branch_id, branch_info in branches_config.items():
         branch_name = branch_info["name"]
 
         for d in range(days):
-            date_str = (start_date + timedelta(days=d)).strftime("%Y-%m-%d")
+            # convert to IST
+            date_str = (start_date.astimezone(ist) + timedelta(days=d)).strftime("%Y-%m-%d")
             payload = {
                 "branch_id": branch_id,
                 "reservation_date": date_str,
@@ -251,7 +254,7 @@ if "all_data" not in st.session_state or st.session_state.days_to_fetch != days_
     st.session_state.all_data = fetch_slots(datetime.today(), days=days_to_fetch)
     st.session_state.days_to_fetch = days_to_fetch
 
-df = st.session_state.all_data
+df = fetch_slots(datetime.now(pytz.timezone("Asia/Kolkata")), days=days_to_fetch)\
 
 if not df.empty:
     # Filter by branch only (NO refetch)
